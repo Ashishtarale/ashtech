@@ -26,17 +26,17 @@ Primary use:    pxdraft
 @import url("https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&amp;display=swap");
 :root,
 [data-bs-theme=light] {
-  --px-theme:	#ffdad9;
-  --px-theme-text:	#2d1516;
-  --px-bg:	#fcfcfc;
-  --px-text:	#534343;
-  --px-gray-1:	#f5f0f0;
-  --px-gray-2:	#f3eaeb;
-  --px-gray-3:	#f0e5e5;
-  --px-gray-4:	#efe3e4;
-  --px-gray-5:	#eddfe0;
-  --px-border:	#f4dedd;
-  --bs-heading-color:	#211a1a;
+  --px-theme:	#5c3f3f;
+  --px-theme-text:	#ffdad9;
+  --px-bg:	#211a1a;
+  --px-text:	#d7c2c1;
+  --px-gray-1:	#2f2525;
+  --px-gray-2:	#362929;
+  --px-gray-3:	#3c2e2e;
+  --px-gray-4:	#3e2f2f;
+  --px-gray-5:	#433232;
+  --px-border:	#534343;
+  --bs-heading-color:	#ede0df;
 }
 
 [data-bs-theme=dark] {
