@@ -613,7 +613,7 @@ img {
 /* Background
 -------------------------------*/
 body {
-  background-color: #534343;
+  background-color: var(--px-bg);
   color: var(--px-text);
   font-family: "Rubik", sans-serif;
   --bs-body-font-weight: 400;
