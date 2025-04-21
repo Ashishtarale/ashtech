@@ -184,7 +184,8 @@
     currency: "INR",
     name: "Ashtech Shop",
     description: "Order Payment",
-    handler: function (response) {
+
+    function (response) {
       console.log(response);
       localStorage.removeItem('cart');
       document.getElementById('checkoutContainer').classList.add('hidden');
