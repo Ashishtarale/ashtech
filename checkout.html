@@ -163,102 +163,92 @@
   window.onload = loadOrderSummary;
 
   document.getElementById('checkoutForm').addEventListener('submit', function(e) {
-    e.preventDefault();
+  e.preventDefault();
 
-    const name = document.getElementById('name').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const address = document.getElementById('address').value.trim();
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const address = document.getElementById('address').value.trim();
 
-    let hasError = false;
-      if (!name) {
-        showError(document.getElementById('name'), 'Full name is required');
-        hasError = true;
-      } else {
-        clearError(document.getElementById('name'));
-      }
-
-      if (!email) {
-        showError(document.getElementById('email'), 'Email is required');
-        hasError = true;
-      } else {
-        clearError(document.getElementById('email'));
-      }
-
-      if (!address) {
-        showError(document.getElementById('address'), 'Address is required');
-        hasError = true;
-      } else {
-        clearError(document.getElementById('address'));
-      }
-
-      if (hasError) return;
-
-    const cart = JSON.parse(localStorage.getItem('cart')) || [];
-    let total = 0;
-    cart.forEach(item => {
-      total += item.price * item.quantity;
-    });
-
-    const options = {
-  key: "rzp_test_zIWjX6N9INsQ2T",
-  amount: total * 100,
-  currency: "INR",
-  name: "Ashtech Shop",
-  description: "Order Payment",
-  handler: function(response) {
-    console.log(response);
-
-    // Save order details locally
-    saveOrderDetails({
-      name: name,
-      email: email,
-      address: address,
-      total: total,
-      orderId: response.razorpay_payment_id,
-      timestamp: new Date().toISOString()
-    });
-
-    // Remove cart
-    localStorage.removeItem('cart');
-
-    // Show success UI
-    document.getElementById('checkoutContainer').classList.add('hidden');
-    document.getElementById('successMessage').classList.remove('hidden');
-
-    // Send confirmation email via EmailJS
-    emailjs.send("service_oxvbppf", "template_gz5rb2n", {
-      name: name,
-      email: email,
-      address: address,
-      order_total: total
-    })
-    .then(function(response) {
-      console.log('SUCCESS!', response.status, response.text);
-    }, function(error) {
-      console.log('FAILED...', error);
-    });
-  }, // <-- don't forget this comma here
-  prefill: {
-    name: name,
-    email: email,
-    contact: ""
-  },
-  notes: {
-    address: address
-  },
-  theme: {
-    color: "#2ecc71"
-  },
-  modal: {
-    ondismiss: function() {
-      alert('Payment popup closed. Order not completed.');
-    }
+  let hasError = false;
+  if (!name) {
+    showError(document.getElementById('name'), 'Full name is required');
+    hasError = true;
+  } else {
+    clearError(document.getElementById('name'));
   }
-};
 
-    const rzp = new Razorpay(options);
-    rzp.open();
+  if (!email) {
+    showError(document.getElementById('email'), 'Email is required');
+    hasError = true;
+  } else {
+    clearError(document.getElementById('email'));
+  }
+
+  if (!address) {
+    showError(document.getElementById('address'), 'Address is required');
+    hasError = true;
+  } else {
+    clearError(document.getElementById('address'));
+  }
+
+  if (hasError) return;
+
+  const cart = JSON.parse(localStorage.getItem('cart')) || [];
+  let total = 0;
+  cart.forEach(item => {
+    total += item.price * item.quantity;
   });
+
+  const options = {
+    key: "rzp_test_zIWjX6N9INsQ2T",
+    amount: total * 100, // Razorpay expects amount in paise
+    currency: "INR",
+    name: "Ashtech Shop",
+    description: "Order Payment",
+    handler: function(response) {
+      console.log(response);
+
+      // Save order details locally
+      saveOrderDetails({
+        name: name,
+        email: email,
+        address: address,
+        total: total,
+        orderId: response.razorpay_payment_id,
+        timestamp: new Date().toISOString()
+      });
+
+      // Send confirmation email via EmailJS
+      emailjs.send("service_oxvbppf", "template_gz5rb2n", {
+        name: name,
+        email: email,
+        address: address,
+        order_total: total,
+        payment_id: response.razorpay_payment_id // Now included
+      })
+      .then(function(emailResponse) {
+        console.log('Email sent!', emailResponse.status, emailResponse.text);
+      }, function(error) {
+        console.log('Email sending failed...', error);
+      });
+
+      // Clear cart
+      localStorage.removeItem('cart');
+
+      // Show success message
+      document.getElementById('checkoutContainer').classList.add('hidden');
+      document.getElementById('successMessage').classList.remove('hidden');
+    },
+    prefill: {
+      name: name,
+      email: email
+    }
+  };
+
+  const rzp = new Razorpay(options);
+  rzp.open();
+});
+
 
   // Add form validation feedback
 function showError(input, message) {
