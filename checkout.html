@@ -232,17 +232,14 @@
       //   console.log('Email sending failed...', error);
       // });
 
-      emailjs.sendForm('service_oxvbppf', 'template_s0qu7y9', this)
+      // Send confirmation email via EmailJS
+      emailjs.sendForm('service_oxvbppf', 'template_s0qu7y9', document.getElementById('checkoutForm'))
       .then(function() {
-        console.log('SUCCESS!');
-        document.getElementById('successMessage').style.display = 'block';
-        document.getElementById('contactForm').reset();
-      }, function(error) {
-        console.log('FAILED...', error);
-        alert('Something went wrong. Please try again!');
+        console.log('Email sent successfully.');
+      })
+      .catch(function(error) {
+        console.log('Email sending failed...', error);
       });
-
-      
 
       // Clear cart
       localStorage.removeItem('cart');
