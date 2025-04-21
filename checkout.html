@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checkout</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    form {
+      margin-bottom: 40px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 8px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    .order-summary {
+      border-top: 1px solid #ddd;
+      padding-top: 20px;
+    }
+    .order-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .total {
+      text-align: right;
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+    .place-order-btn {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background-color: #2ecc71;
+      color: white;
+      border: none;
+      font-size: 1.2rem;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 30px;
+      transition: background-color 0.3s ease;
+    }
+    .place-order-btn:hover {
+      background-color: #27ae60;
+    }
+    .success-message {
+      text-align: center;
+      font-size: 1.5rem;
+      color: #27ae60;
+      margin-top: 50px;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container" id="checkoutContainer">
+  <h1>Checkout</h1>
+
+  <form id="checkoutForm">
+    <h2>Shipping Information</h2>
+
+    <div class="form-group">
+      <label for="name">Full Name:</label>
+      <input type="text" id="name" required>
+    </div>
+
+    <div class="form-group">
+      <label for="email">Email Address:</label>
+      <input type="email" id="email" required>
+    </div>
+
+    <div class="form-group">
+      <label for="address">Shipping Address:</label>
+      <textarea id="address" rows="3" required></textarea>
+    </div>
+
+    <div class="order-summary">
+      <h2>Order Summary</h2>
+      <div id="orderItems"></div>
+      <div class="total" id="orderTotal"></div>
+    </div>
+
+    <button type="submit" class="place-order-btn">Place Order</button>
+  </form>
+</div>
+
+<div class="success-message hidden" id="successMessage">
+  🎉 Thank you for your purchase! <br><br> A confirmation email has been sent.
+</div>
+
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+
+<script>
+
+    function loadOrderSummary() {
+      
+        const cart = JSON.parse(localStorage.getItem('cart')) || [];
+        const orderItemsContainer = document.getElementById('orderItems');
+        const orderTotalContainer = document.getElementById('orderTotal');
+        
+        if (cart.length === 0) {
+          orderItemsContainer.innerHTML = '<p>Your cart is empty.</p>';
+          orderTotalContainer.textContent = '';
+          document.querySelector('.place-order-btn').disabled = true;
+          return;
+        }
+
+        let orderHTML = '';
+        let total = 0;
+
+        cart.forEach(item => {
+          const itemTotal = item.price * item.quantity;
+          total += itemTotal;
+          orderHTML += `
+            <div class="order-item">
+              <div>${item.name} (x${item.quantity})</div>
+              <div>₹${itemTotal.toLocaleString()}</div>
+            </div>
+          `;
+
+        });
+
+        orderItemsContainer.innerHTML = orderHTML;
+        orderTotalContainer.textContent = `Total: $${total.toLocaleString()}`;
+      }
+      window.onload = loadOrderSummary;
+  
+  document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const address = document.getElementById('address').value.trim();
+
+  if (!name || !email || !address) {
+    alert('Please complete all fields.');
+    return;
+  }
+
+  const cart = JSON.parse(localStorage.getItem('cart')) || [];
+  let total = 0;
+  cart.forEach(item => {
+    total += item.price * item.quantity;
+  });
+
+  // Razorpay options
+    const options = {
+    key: "rzp_test_zIWjX6N9INsQ2T",
+    amount: total * 100,
+    currency: "INR",
+    name: "Ashtech Shop",
+    description: "Order Payment",
+    handler: function (response) {
+      console.log(response);
+      localStorage.removeItem('cart');
+      document.getElementById('checkoutContainer').classList.add('hidden');
+      document.getElementById('successMessage').classList.remove('hidden');
+    },
+    prefill: {
+      name: name,
+      email: email,
+      contact: ""
+    },
+    notes: {
+      address: address
+    },
+    theme: {
+      color: "#2ecc71"
+    },
+    modal: {
+      ondismiss: function() {
+        alert('Payment popup closed. Order not completed.');
+      }
+    }
+  };
+
+
+  const rzp = new Razorpay(options);
+  rzp.open();
+});
+
+</script>
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/emailjs-com@2/dist/email.min.js"></script>
+<script type="text/javascript">
+  (function(){
+    emailjs.init("XJIboXKmYYI7WNcdI");
+  })();
+
+
+    handler: function (response) {
+    console.log(response);
+    
+    // Remove cart
+    localStorage.removeItem('cart');
+
+    // Show success UI
+    document.getElementById('checkoutContainer').classList.add('hidden');
+    document.getElementById('successMessage').classList.remove('hidden');
+
+    // Send email
+    emailjs.send("service_j31dtr5", "template_gz5rb2n", {
+      name: name,
+      email: email,
+      address: address,
+      order_total: total
+    })
+    .then(function(response) {
+      console.log('SUCCESS!', response.status, response.text);
+    }, function(error) {
+      console.log('FAILED...', error);
+    });
+  }
+
+</script>
+
+
+</body>
+</html>

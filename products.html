@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Product Page</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f9f9f9;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 20px;
+      display: flex;
+      gap: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+      flex-wrap: wrap;
+    }
+
+    .product-img {
+      flex: 1;
+      min-width: 300px;
+    }
+
+    .product-img img {
+      width: 100%;
+      border-radius: 10px;
+    }
+
+    .product-info {
+      flex: 2;
+      min-width: 300px;
+    }
+
+    .product-info h1 {
+      margin: 0 0 10px;
+      font-size: 2rem;
+    }
+
+    .price {
+      font-size: 1.5rem;
+      color: #e74c3c;
+      margin: 10px 0;
+    }
+
+    .description {
+      color: #555;
+      margin: 15px 0;
+      line-height: 1.6;
+    }
+
+    .quantity {
+      display: flex;
+      align-items: center;
+      margin: 20px 0;
+    }
+
+    .quantity label {
+      margin-right: 10px;
+      font-weight: bold;
+    }
+
+    .quantity input {
+      width: 60px;
+      padding: 5px;
+      font-size: 1rem;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    button {
+      background-color: #3498db;
+      color: white;
+      padding: 10px 25px;
+      border: none;
+      border-radius: 5px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    .buy-now {
+      background-color: #2ecc71;
+    }
+
+    .buy-now:hover {
+      background-color: #27ae60;
+    }
+
+    .cart-msg {
+      margin-top: 20px;
+      color: green;
+      font-weight: bold;
+      min-height: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="product-img">
+      <img src="https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcTZNrv8Rc_RwnCGn9wKjRnNhwXfDspj3jWEHpHo3xGe7SFyeOitfJxxDiVu3D4TyHjt20RLU1cLNni00ap3H-Z_JegF9kkLFcWKtjupUuAMF0D1SzTrKYZw9A" alt="Awesome Sneakers">
+    </div>
+    <div class="product-info">
+      <h1>Awesome Sneakers</h1>
+      <div class="price">$5,000</div>
+      <p class="description">
+        Stylish, comfortable, and perfect for any occasion. Made with breathable materials and premium cushioning for everyday wear.
+      </p>
+      <div class="quantity">
+        <label for="qty">Quantity:</label>
+        <input type="number" id="qty" min="1" value="1">
+      </div>
+      <div class="buttons">
+        <button onclick="addToCart()">Add to Cart</button>
+        <button class="buy-now" onclick="buyNow()">Buy Now</button>
+      </div>
+      <div class="cart-msg" id="cartMessage"></div>
+    </div>
+  </div>
+
+  <script>
+    function addToCart() {
+      const qty = parseInt(document.getElementById('qty').value);
+      if (isNaN(qty) || qty < 1) {
+        alert('Please enter a valid quantity.');
+        return;
+      }
+  
+      const product = {
+        id: 1,
+        name: "Awesome Sneakers",
+        price: 5000,
+        image: "https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcTZNrv8Rc_RwnCGn9wKjRnNhwXfDspj3jWEHpHo3xGe7SFyeOitfJxxDiVu3D4TyHjt20RLU1cLNni00ap3H-Z_JegF9kkLFcWKtjupUuAMF0D1SzTrKYZw9A",
+        quantity: qty
+      };
+  
+      let cart = JSON.parse(localStorage.getItem('cart')) || [];
+      const existingItem = cart.find(item => item.id === product.id);
+  
+      if (existingItem) {
+        existingItem.quantity += qty;
+      } else {
+        cart.push(product);
+      }
+  
+      localStorage.setItem('cart', JSON.stringify(cart));
+  
+      const message = document.getElementById('cartMessage');
+      message.textContent = `${qty} item(s) added to cart!`;
+  
+      setTimeout(() => {
+        message.textContent = "";
+      }, 3000);
+    }
+  
+    function buyNow() {
+      const qty = parseInt(document.getElementById('qty').value);
+      if (isNaN(qty) || qty < 1) {
+        alert('Please enter a valid quantity.');
+        return;
+      }
+  
+      // Add to cart first
+      addToCart();
+  
+      // Redirect to the cart page
+      window.location.href = "cart.html"; // Make sure you have a cart.html file!
+    }
+  </script>
+  
+
+</body>
+</html>
