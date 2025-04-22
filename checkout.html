@@ -229,22 +229,25 @@
   });
 
   function finalizeOrder(name, email, address, total, orderId, paymentId) {
-    // Save order locally
-    const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-    orders.push({ name, email, address, total, orderId, paymentId, timestamp: new Date().toISOString() });
-    localStorage.setItem('orders', JSON.stringify(orders));
+  const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+  orders.push({ name, email, address, total, orderId, paymentId, timestamp: new Date().toISOString() });
+  localStorage.setItem('orders', JSON.stringify(orders));
 
-    // Send confirmation email
-    emailjs.sendForm('service_oxvbppf', 'template_s0qu7y9', document.getElementById('checkoutForm'))
-      .then(() => console.log('Email sent'))
-      .catch(error => console.error('Email sending failed:', error));
+  // 👇 THIS is the important added line
+  localStorage.setItem('cart_items_last', JSON.stringify(JSON.parse(localStorage.getItem('cart')) || []));
 
-    // Clear cart and redirect
-    setTimeout(() => {
-      localStorage.removeItem('cart');
-      window.location.href = `thankyou.html?orderId=${orderId}`;
-    }, 1000); // slight delay for smooth UX
-  }
+  // Send confirmation email
+  emailjs.sendForm('service_oxvbppf', 'template_s0qu7y9', document.getElementById('checkoutForm'))
+    .then(() => console.log('Email sent'))
+    .catch(error => console.error('Email sending failed:', error));
+
+  // Clear cart and redirect
+  setTimeout(() => {
+    localStorage.removeItem('cart');
+    window.location.href = `thankyou.html?orderId=${orderId}`;
+  }, 1000);
+}
+
 </script>
 
   

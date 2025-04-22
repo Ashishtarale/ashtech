@@ -136,7 +136,7 @@
 
     y += gap;
     // Iterate through cartItems
-    latestOrder.cartItems.forEach(({ name, quantity, price }) => {
+    cartItems.forEach(({ name, quantity, price }) => {
       const total = price * quantity;
       doc.text(name, x, y);
       doc.text(String(quantity), x + 85, y);
