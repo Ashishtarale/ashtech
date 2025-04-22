@@ -81,8 +81,14 @@
     .hidden {
       display: none;
     }
+    .error-message {
+      color: red;
+      font-size: 0.9rem;
+      margin-top: 5px;
+    }
   </style>
 </head>
+
 <body>
 
 <div class="container" id="checkoutContainer">
@@ -108,7 +114,7 @@
 
     <div class="order-summary">
       <h2>Order Summary</h2>
-      <div id="order_id"></div>
+      <div id="orderItems"></div>
       <div class="total" id="orderTotal"></div>
     </div>
 
@@ -120,178 +126,113 @@
   🎉 Thank you for your purchase! <br><br> A confirmation email has been sent.
 </div>
 
-
+<!-- Scripts -->
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/emailjs-com@2/dist/email.min.js"></script>
 
 <script type="text/javascript">
   // Initialize EmailJS
   (function(){
-    emailjs.init("XJIboXKmYYI7WNcdI"); // Your public key
+    emailjs.init("XJIboXKmYYI7WNcdI");
   })();
 
+  // Load order summary from localStorage
   function loadOrderSummary() {
     const cart = JSON.parse(localStorage.getItem('cart')) || [];
-    const orderItemsContainer = document.getElementById('order_id');
-    const orderTotalContainer = document.getElementById('orderTotal');
+    const orderItems = document.getElementById('orderItems');
+    const orderTotal = document.getElementById('orderTotal');
     
     if (cart.length === 0) {
-      orderItemsContainer.innerHTML = '<p>Your cart is empty.</p>';
-      orderTotalContainer.textContent = '';
+      orderItems.innerHTML = '<p>Your cart is empty.</p>';
+      orderTotal.textContent = '';
       document.querySelector('.place-order-btn').disabled = true;
       return;
     }
 
-    let orderHTML = '';
     let total = 0;
-
-    cart.forEach(item => {
+    orderItems.innerHTML = cart.map(item => {
       const itemTotal = item.price * item.quantity;
       total += itemTotal;
-      orderHTML += `
+      return `
         <div class="order-item">
           <div>${item.name} (x${item.quantity})</div>
           <div>₹${itemTotal.toLocaleString()}</div>
         </div>
       `;
-    });
-
-    orderItemsContainer.innerHTML = orderHTML;
-    orderTotalContainer.textContent = `Total: ₹${total.toLocaleString()}`;
+    }).join('');
+    
+    orderTotal.textContent = `Total: ₹${total.toLocaleString()}`;
   }
-  
   window.onload = loadOrderSummary;
 
+  // Handle form submit
   document.getElementById('checkoutForm').addEventListener('submit', function(e) {
-  e.preventDefault();
+    e.preventDefault();
 
-  const name = document.getElementById('name').value.trim();
-  const email = document.getElementById('email').value.trim();
-  const address = document.getElementById('address').value.trim();
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const address = document.getElementById('address').value.trim();
 
-  let hasError = false;
-  if (!name) {
-    showError(document.getElementById('name'), 'Full name is required');
-    hasError = true;
-  } else {
-    clearError(document.getElementById('name'));
-  }
+    if (!name || !email || !address) {
+      alert('Please fill all fields');
+      return;
+    }
 
-  if (!email) {
-    showError(document.getElementById('email'), 'Email is required');
-    hasError = true;
-  } else {
-    clearError(document.getElementById('email'));
-  }
+    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+    let total = 0;
+    cart.forEach(item => {
+      total += item.price * item.quantity;
+    });
 
-  if (!address) {
-    showError(document.getElementById('address'), 'Address is required');
-    hasError = true;
-  } else {
-    clearError(document.getElementById('address'));
-  }
+    const options = {
+      key: "rzp_test_zIWjX6N9INsQ2T",
+      amount: total * 100,
+      currency: "INR",
+      name: "Ashtech Shop",
+      description: "Order Payment",
+      handler: function(response) {
+        saveOrder({
+          name: name,
+          email: email,
+          address: address,
+          total: total,
+          orderId: response.razorpay_payment_id,
+          timestamp: new Date().toISOString()
+        });
 
-  if (hasError) return;
+        emailjs.sendForm('service_oxvbppf', 'template_s0qu7y9', document.getElementById('checkoutForm'))
+          .then(function() {
+            console.log('Email sent successfully');
+          }, function(error) {
+            console.error('Email failed:', error);
+          });
 
-  const cart = JSON.parse(localStorage.getItem('cart')) || [];
-  let total = 0;
-  cart.forEach(item => {
-    total += item.price * item.quantity;
+        localStorage.removeItem('cart');
+        document.getElementById('checkoutContainer').classList.add('hidden');
+        document.getElementById('successMessage').classList.remove('hidden');
+        document.getElementById('checkoutForm').reset();
+      },
+      prefill: {
+        name: name,
+        email: email
+      }
+    };
+
+    const rzp = new Razorpay(options);
+    rzp.open();
+
+    rzp.on('payment.failed', function () {
+      alert('Payment failed. Please try again.');
+    });
   });
 
-  const options = {
-    key: "rzp_test_zIWjX6N9INsQ2T",
-    amount: total * 100, // Razorpay expects amount in paise
-    currency: "INR",
-    name: "Ashtech Shop",
-    description: "Order Payment",
-    handler: function(response) {
-      console.log(response);
-
-      // Save order details locally
-      saveOrderDetails({
-        name: name,
-        email: email,
-        address: address,
-        total: total,
-        orderId: response.razorpay_payment_id,
-        timestamp: new Date().toISOString()
-      });
-
-      // Send confirmation email via EmailJS
-      // emailjs.send("service_oxvbppf", "template_s0qu7y9", {
-      //   name: name,
-      //   email: email,
-      //   address: address,
-      //   order_total: total,
-      //   payment_id: response.razorpay_payment_id // Now included
-      // })
-      // .then(function(emailResponse) {
-      //   console.log('Email sent!', emailResponse.status, emailResponse.text);
-      // }, function(error) {
-      //   console.log('Email sending failed...', error);
-      // });
-
-      emailjs.sendForm('service_oxvbppf', 'template_s0qu7y9', this)
-      .then(function() {
-        console.log('SUCCESS!');
-        document.getElementById('successMessage').style.display = 'block';
-        document.getElementById('contactForm').reset();
-      }, function(error) {
-        console.log('FAILED...', error);
-        alert('Something went wrong. Please try again!');
-      });
-
-      
-
-      // Clear cart
-      localStorage.removeItem('cart');
-
-      // Show success message
-      document.getElementById('checkoutContainer').classList.add('hidden');
-      document.getElementById('successMessage').classList.remove('hidden');
-    },
-    prefill: {
-      name: name,
-      email: email
-    }
-  };
-
-  const rzp = new Razorpay(options);
-  rzp.open();
-});
-
-
-  // Add form validation feedback
-function showError(input, message) {
-  const formGroup = input.parentElement;
-  formGroup.classList.add('error');
-  const error = formGroup.querySelector('.error-message') || document.createElement('small');
-  error.className = 'error-message';
-  error.style.color = 'red';
-  error.textContent = message;
-  formGroup.appendChild(error);
-}
-
-function clearError(input) {
-  const formGroup = input.parentElement;
-  formGroup.classList.remove('error');
-  const error = formGroup.querySelector('.error-message');
-  if (error) {
-    error.remove();
+  // Save order details
+  function saveOrder(order) {
+    const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+    orders.push(order);
+    localStorage.setItem('orders', JSON.stringify(orders));
   }
-}
-
-// Add order confirmation details to localStorage
-function saveOrderDetails(orderData) {
-  const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-  orders.push(orderData);
-  localStorage.setItem('orders', JSON.stringify(orders));
-}
-
 </script>
-
-
 
 </body>
 </html>
