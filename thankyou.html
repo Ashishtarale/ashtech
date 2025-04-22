@@ -3,39 +3,133 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="refresh" content="10;url=products.html">
   <title>Thank You</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
       background: #f9f9f9;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .message {
+      font-family: Arial, sans-serif;
       text-align: center;
+      padding: 50px 20px;
     }
-    h1 {
-      color: #2ecc71;
-    }
-    a {
-      text-decoration: none;
-      color: #3498db;
+    .thank-you {
+      background: #fff;
+      padding: 40px 30px;
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
       display: inline-block;
-      margin-top: 20px;
+      margin-top: 50px;
+    }
+    .thank-you h1 {
+      font-size: 2.5rem;
+      color: #2ecc71;
+      margin: 20px 0;
+    }
+    .thank-you p {
+      font-size: 1.2rem;
+      color: #333;
+      margin: 10px 0;
+    }
+    .thank-you button {
+      margin: 15px 10px 0;
+      padding: 12px 25px;
+      background: #2ecc71;
+      color: #fff;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .thank-you button:hover {
+      background: #27ae60;
     }
   </style>
 </head>
+
 <body>
 
-<div class="message">
-  <h1>Thank You for Your Order!</h1>
-  <p>We'll ship your items soon.</p>
-  <a href="index.html">Back to Home</a>
+<div class="thank-you">
+  <div style="font-size: 80px;">🎉</div>
+  <h1>Thank You!</h1>
+  <p>Your order has been placed successfully.</p>
+  <p id="orderIdDisplay" style="margin-top: 20px; font-weight: bold;"></p>
+  <button id="downloadInvoiceBtn">Download Invoice</button>
+  <button onclick="window.location.href='products.html'">Continue Shopping</button>
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  const { jsPDF } = window.jspdf;
+
+  // Display Order ID
+  const orderId = new URLSearchParams(window.location.search).get('orderId');
+  if (orderId) {
+    document.getElementById('orderIdDisplay').textContent = `Order ID: ${orderId}`;
+  }
+
+  document.getElementById('downloadInvoiceBtn').addEventListener('click', () => {
+    const doc = new jsPDF();
+    const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+    const latestOrder = orders.at(-1); // Shorter, modern way
+
+    if (!latestOrder) {
+      alert("No order found!");
+      return;
+    }
+
+    // Invoice Layout
+    let x = 20, y = 20, gap = 10;
+
+    doc.setFontSize(22).setTextColor(46, 204, 113).text("Ashtech Shop", x, y);
+    y += gap * 2;
+    doc.setFontSize(16).setTextColor(0).text("INVOICE", x, y);
+    y += gap;
+    doc.setFontSize(12);
+    doc.text(`Order ID: ${latestOrder.orderId}`, x, y);
+    y += gap;
+    doc.text(`Date: ${new Date(latestOrder.timestamp).toLocaleDateString()}`, x, y);
+
+    y += gap * 2;
+    doc.setFontSize(14).text("Customer Details:", x, y);
+    y += gap;
+    doc.setFontSize(12);
+    doc.text(`Name: ${latestOrder.name}`, x, y);
+    y += gap;
+    doc.text(`Email: ${latestOrder.email}`, x, y);
+    y += gap;
+    doc.text(`Address: ${latestOrder.address}`, x, y);
+
+    y += gap * 2;
+    doc.setFontSize(14).text("Order Items:", x, y);
+    y += gap;
+    doc.setFontSize(12);
+    doc.text("Item", x, y);
+    doc.text("Qty", x + 80, y);
+    doc.text("Price", x + 110, y);
+    doc.text("Total", x + 150, y);
+    y += 5;
+    doc.line(x, y, 190, y);
+    y += gap;
+
+    const cartItems = JSON.parse(localStorage.getItem('cart_items_last') || '[]');
+    cartItems.forEach(item => {
+      const total = item.price * item.quantity;
+      doc.text(item.name, x, y);
+      doc.text(`${item.quantity}`, x + 85, y);
+      doc.text(`₹${item.price}`, x + 115, y);
+      doc.text(`₹${total}`, x + 155, y);
+      y += gap;
+    });
+
+    y += 10;
+    doc.setFontSize(14).text(`Grand Total: ₹${latestOrder.total.toLocaleString()}`, x, y);
+
+    y += gap * 2;
+    doc.setFontSize(12).setTextColor(100).text("Thank you for shopping with Ashtech! ❤️", x, y);
+
+    doc.save(`Invoice-${latestOrder.orderId}.pdf`);
+  });
+</script>
 
 </body>
 </html>

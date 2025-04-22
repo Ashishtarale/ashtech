@@ -91,68 +91,88 @@
 
 <body>
 
-<div class="container" id="checkoutContainer">
-  <h1>Checkout</h1>
+<!-- Inside your <body> tag, updated version -->
 
-  <form id="checkoutForm">
-    <h2>Shipping Information</h2>
+  <div class="container" id="checkoutContainer">
+    <h1>Checkout</h1>
+  
+    <form id="checkoutForm">
+      <h2>Shipping Information</h2>
+  
+      <div class="form-group">
+        <label for="name">Full Name:</label>
+        <input type="text" id="name" name="name" required>
+      </div>
+  
+      <div class="form-group">
+        <label for="email">Email Address:</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+  
+      <div class="form-group">
+        <label for="address">Shipping Address:</label>
+        <textarea id="address" name="address" rows="3" required></textarea>
+      </div>
+  
+      <input type="hidden" name="order_details" id="order_details">
+  
+      <div class="order-summary">
+        <h2>Order Summary</h2>
+        <div id="orderItems"></div>
+        <div class="total" id="orderTotal"></div>
+      </div>
+  
+      <button type="submit" class="place-order-btn" id="placeOrderBtn">Place Order</button>
+    </form>
+  </div>
+  
+  <div id="successMessage" class="success-message hidden">
+    <div style="font-size: 60px; margin-bottom: 20px;">🎉</div>
+    <h2 style="color: #2ecc71; font-size: 2rem;">Thank you for your purchase!</h2>
+    <p style="font-size: 1.2rem; margin-top: 10px;">A confirmation email has been sent to your inbox.</p>
+    <button onclick="window.location.href='products.html'" 
+            style="margin-top: 30px; padding: 12px 25px; background-color: #2ecc71; border: none; color: white; font-size: 1.1rem; border-radius: 5px; cursor: pointer;">
+      Continue Shopping
+    </button>
+  </div>
+  
+  
+  <!-- Optional simple spinner -->
+  <div id="loadingSpinner" class="hidden" style="text-align:center; margin-top:20px;">
+    <img src="https://i.gifer.com/ZZ5H.gif" width="80" alt="Loading...">
+    <p>Processing Payment...</p>
+  </div>
+  
+  
 
-    <div class="form-group">
-      <label for="name">Full Name:</label>
-      <input type="text" id="name" required>
-    </div>
-
-    <div class="form-group">
-      <label for="email">Email Address:</label>
-      <input type="email" id="email" required>
-    </div>
-
-    <div class="form-group">
-      <label for="address">Shipping Address:</label>
-      <textarea id="address" rows="3" required></textarea>
-    </div>
-
-    <div class="order-summary">
-      <h2>Order Summary</h2>
-      <div id="orderItems"></div>
-      <div class="total" id="orderTotal"></div>
-    </div>
-
-    <button type="submit" class="place-order-btn">Place Order</button>
-  </form>
-</div>
-
-<div class="success-message hidden" id="successMessage">
-  🎉 Thank you for your purchase! <br><br> A confirmation email has been sent.
-</div>
-
-<!-- Scripts -->
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/emailjs-com@2/dist/email.min.js"></script>
 
-<script type="text/javascript">
-  // Initialize EmailJS
-  (function(){
+<script>
+  (function() {
     emailjs.init("XJIboXKmYYI7WNcdI");
   })();
 
-  // Load order summary from localStorage
+  window.onload = () => loadOrderSummary();
+
   function loadOrderSummary() {
     const cart = JSON.parse(localStorage.getItem('cart')) || [];
     const orderItems = document.getElementById('orderItems');
     const orderTotal = document.getElementById('orderTotal');
-    
-    if (cart.length === 0) {
+
+    if (!cart.length) {
       orderItems.innerHTML = '<p>Your cart is empty.</p>';
       orderTotal.textContent = '';
-      document.querySelector('.place-order-btn').disabled = true;
+      document.getElementById('placeOrderBtn').disabled = true;
       return;
     }
 
-    let total = 0;
+    let total = 0, details = '';
+
     orderItems.innerHTML = cart.map(item => {
       const itemTotal = item.price * item.quantity;
       total += itemTotal;
+      details += `${item.name} (x${item.quantity}) - ₹${itemTotal.toLocaleString()}\n`;
       return `
         <div class="order-item">
           <div>${item.name} (x${item.quantity})</div>
@@ -160,79 +180,75 @@
         </div>
       `;
     }).join('');
-    
-    orderTotal.textContent = `Total: ₹${total.toLocaleString()}`;
-  }
-  window.onload = loadOrderSummary;
 
-  // Handle form submit
-  document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+    orderTotal.textContent = `Total: ₹${total.toLocaleString()}`;
+    document.getElementById('order_details').value = details.trim();
+  }
+
+  document.getElementById('checkoutForm').addEventListener('submit', e => {
     e.preventDefault();
 
     const name = document.getElementById('name').value.trim();
     const email = document.getElementById('email').value.trim();
     const address = document.getElementById('address').value.trim();
+    const cart = JSON.parse(localStorage.getItem('cart')) || [];
+    const placeOrderBtn = document.getElementById('placeOrderBtn');
+    const loadingSpinner = document.getElementById('loadingSpinner');
 
-    if (!name || !email || !address) {
-      alert('Please fill all fields');
+    if (!name || !email || !address || !cart.length) {
+      alert('Please fill all fields and check your cart.');
       return;
     }
 
-    const cart = JSON.parse(localStorage.getItem('cart')) || [];
-    let total = 0;
-    cart.forEach(item => {
-      total += item.price * item.quantity;
-    });
+    placeOrderBtn.disabled = true;
+    loadingSpinner.classList.remove('hidden');
 
-    const options = {
+    const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const orderId = `ASH${Math.floor(100000 + Math.random() * 900000)}`;
+
+    const rzp = new Razorpay({
       key: "rzp_test_zIWjX6N9INsQ2T",
       amount: total * 100,
       currency: "INR",
       name: "Ashtech Shop",
-      description: "Order Payment",
+      description: `Order ID: ${orderId}`,
+      prefill: { name, email },
+      notes: { address, total, orderId },
       handler: function(response) {
-        saveOrder({
-          name: name,
-          email: email,
-          address: address,
-          total: total,
-          orderId: response.razorpay_payment_id,
-          timestamp: new Date().toISOString()
-        });
-
-        emailjs.sendForm('service_oxvbppf', 'template_s0qu7y9', document.getElementById('checkoutForm'))
-          .then(function() {
-            console.log('Email sent successfully');
-          }, function(error) {
-            console.error('Email failed:', error);
-          });
-
-        localStorage.removeItem('cart');
-        document.getElementById('checkoutContainer').classList.add('hidden');
-        document.getElementById('successMessage').classList.remove('hidden');
-        document.getElementById('checkoutForm').reset();
-      },
-      prefill: {
-        name: name,
-        email: email
+        finalizeOrder(name, email, address, total, orderId, response.razorpay_payment_id);
       }
-    };
+    });
 
-    const rzp = new Razorpay(options);
     rzp.open();
 
-    rzp.on('payment.failed', function () {
+    rzp.on('payment.failed', function(response) {
       alert('Payment failed. Please try again.');
+      placeOrderBtn.disabled = false;
+      loadingSpinner.classList.add('hidden');
     });
   });
 
-  // Save order details
-  function saveOrder(order) {
+  function finalizeOrder(name, email, address, total, orderId, paymentId) {
+    // Save order locally
     const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-    orders.push(order);
+    orders.push({ name, email, address, total, orderId, paymentId, timestamp: new Date().toISOString() });
     localStorage.setItem('orders', JSON.stringify(orders));
+
+    // Send confirmation email
+    emailjs.sendForm('service_oxvbppf', 'template_s0qu7y9', document.getElementById('checkoutForm'))
+      .then(() => console.log('Email sent'))
+      .catch(error => console.error('Email sending failed:', error));
+
+    // Clear cart and redirect
+    setTimeout(() => {
+      localStorage.removeItem('cart');
+      window.location.href = `thankyou.html?orderId=${orderId}`;
+    }, 1000); // slight delay for smooth UX
   }
 </script>
+
+  
+  
 
 </body>
 </html>
