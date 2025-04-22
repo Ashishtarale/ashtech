@@ -53,7 +53,7 @@
   <h1>Thank You!</h1>
   <p>Your order has been placed successfully.</p>
   <p id="orderIdDisplay" style="margin-top: 20px; font-weight: bold;"></p>
-  <button id="downloadInvoiceBtn">Download Invoice</button>
+  <button id="downloadInvoiceBtn">Download Fancy Invoice</button>
   <button onclick="window.location.href='products.html'">Continue Shopping</button>
 </div>
 
@@ -61,73 +61,104 @@
 <script>
   const { jsPDF } = window.jspdf;
 
-  // Display Order ID
-  const orderId = new URLSearchParams(window.location.search).get('orderId');
+  const logoUrl = ''; // Leave empty if no logo needed (otherwise put URL)
+
+  const orderId = new URLSearchParams(location.search).get('orderId');
   if (orderId) {
     document.getElementById('orderIdDisplay').textContent = `Order ID: ${orderId}`;
   }
 
-  document.getElementById('downloadInvoiceBtn').addEventListener('click', () => {
-    const doc = new jsPDF();
+  document.getElementById('downloadInvoiceBtn').addEventListener('click', async () => {
     const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-    const latestOrder = orders.at(-1); // Shorter, modern way
+    const cartItems = JSON.parse(localStorage.getItem('cart_items_last') || '[]');
+    const latestOrder = orders.at(-1);
 
     if (!latestOrder) {
       alert("No order found!");
       return;
     }
 
-    // Invoice Layout
+    const doc = new jsPDF();
     let x = 20, y = 20, gap = 10;
 
-    doc.setFontSize(22).setTextColor(46, 204, 113).text("Ashtech Shop", x, y);
-    y += gap * 2;
-    doc.setFontSize(16).setTextColor(0).text("INVOICE", x, y);
-    y += gap;
-    doc.setFontSize(12);
-    doc.text(`Order ID: ${latestOrder.orderId}`, x, y);
-    y += gap;
-    doc.text(`Date: ${new Date(latestOrder.timestamp).toLocaleDateString()}`, x, y);
+    // Logo (optional)
+    if (logoUrl) {
+      try {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.src = logoUrl;
+        await img.decode();
+        doc.addImage(img, 'PNG', x, y, 40, 20);
+      } catch (err) {
+        console.warn('Logo load failed, skipping...');
+      }
+    }
 
-    y += gap * 2;
-    doc.setFontSize(14).text("Customer Details:", x, y);
+    // Company Name
+    doc.setFontSize(22).setTextColor(46, 204, 113).text("Ashtech Shop", x + 50, y + 12);
+
+    // Invoice Title
+    y += gap * 3;
+    doc.setFontSize(16).setTextColor(0).text("INVOICE", x, y);
+    y += 5;
+    doc.setDrawColor(200).line(x, y, 190, y);
+
+    // Order Info
     y += gap;
-    doc.setFontSize(12);
+    const invoiceId = latestOrder.orderId || Math.floor(Math.random() * 90000 + 10000);
+    doc.setFontSize(12).text(`Order ID: ${invoiceId}`, x, y);
+    doc.text(`Date: ${new Date(latestOrder.timestamp).toLocaleDateString()}`, x + 100, y);
+
+    // Customer Info
+    y += gap * 2;
+    doc.setFontSize(14).setTextColor(46, 204, 113).text("Customer Details", x, y);
+    y += gap;
+    doc.setFontSize(12).setTextColor(0);
     doc.text(`Name: ${latestOrder.name}`, x, y);
     y += gap;
     doc.text(`Email: ${latestOrder.email}`, x, y);
     y += gap;
     doc.text(`Address: ${latestOrder.address}`, x, y);
 
+    // Order Items (Here’s the fix)
     y += gap * 2;
-    doc.setFontSize(14).text("Order Items:", x, y);
+    doc.setFontSize(14).setTextColor(46, 204, 113).text("Order Summary", x, y);
     y += gap;
-    doc.setFontSize(12);
+    doc.setFontSize(12).setTextColor(0);
+
     doc.text("Item", x, y);
     doc.text("Qty", x + 80, y);
     doc.text("Price", x + 110, y);
     doc.text("Total", x + 150, y);
-    y += 5;
-    doc.line(x, y, 190, y);
-    y += gap;
 
-    const cartItems = JSON.parse(localStorage.getItem('cart_items_last') || '[]');
-    cartItems.forEach(item => {
-      const total = item.price * item.quantity;
-      doc.text(item.name, x, y);
-      doc.text(`${item.quantity}`, x + 85, y);
-      doc.text(`₹${item.price}`, x + 115, y);
-      doc.text(`₹${total}`, x + 155, y);
+    y += 5;
+    doc.setDrawColor(200).line(x, y, 190, y);
+
+    y += gap;
+    // Iterate through cartItems
+    latestOrder.cartItems.forEach(({ name, quantity, price }) => {
+      const total = price * quantity;
+      doc.text(name, x, y);
+      doc.text(String(quantity), x + 85, y);
+      doc.text(`₹${price.toLocaleString()}`, x + 110, y);
+      doc.text(`₹${total.toLocaleString()}`, x + 150, y);
       y += gap;
     });
 
+    // Grand Total
     y += 10;
     doc.setFontSize(14).text(`Grand Total: ₹${latestOrder.total.toLocaleString()}`, x, y);
 
-    y += gap * 2;
+    // Footer
+    y += gap * 3;
+    doc.setDrawColor(200).line(x, y, 190, y);
+    y += gap;
     doc.setFontSize(12).setTextColor(100).text("Thank you for shopping with Ashtech! ❤️", x, y);
+    y += gap * 2;
+    doc.setFontSize(10).setTextColor(150).text("Authorized Signature", x, y);
+    doc.line(x, y + 2, x + 40, y + 2);
 
-    doc.save(`Invoice-${latestOrder.orderId}.pdf`);
+    doc.save(`Invoice-${invoiceId}.pdf`);
   });
 </script>
 
