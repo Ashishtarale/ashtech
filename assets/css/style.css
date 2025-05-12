@@ -122,6 +122,21 @@ Primary use:    pxdraft
   font-size: 18px;
 }
 
+@media (min-width: 425px) {
+  .navbar-brand {
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-align: center;
+      align-items: center;
+  -ms-flex-pack: center;
+      justify-content: center;
+  color: var(--px-theme-text);
+  line-height: 1;
+  font-size: 18px;
+  width: 150px;
+}
+}
+
 .toggler-menu {
   padding: 0;
   width: 35px;
